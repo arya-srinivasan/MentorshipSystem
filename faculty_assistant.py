@@ -3,7 +3,6 @@ from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
 from database.db import get_questions
 
-
 load_dotenv()
 
 faculty_assistant = LlmAgent(
