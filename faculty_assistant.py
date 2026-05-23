@@ -2,6 +2,9 @@ import os
 from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
 from database.db import get_questions
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
 
 load_dotenv()
 
@@ -40,3 +43,22 @@ faculty_assistant = LlmAgent(
     tools=[get_questions],
     output_key="response",
 )
+
+session_service = InMemorySessionService()
+runner = Runner (
+    agent=faculty_assistant, 
+    app_name="Faculty Assistant", 
+    session_service=session_service,
+)
+
+async def run_faculty_assistant(conversation_id, session_id, user_id):
+    result = runner.run(
+        user_id=user_id,
+        session_id=session_id,
+        new_message=Content(role="user", parts=[Part(text="Check pending questions")])
+    )
+
+    for event in result:
+        if event.is_final_response():
+            return event.content.parts[0].text
+    return "No response from faculty assistant."

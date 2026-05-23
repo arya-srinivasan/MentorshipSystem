@@ -1,6 +1,11 @@
 import os
+import json
+from google.genai.types import Content, Part
 from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from database.db import add_question
 
 load_dotenv()
 
@@ -36,3 +41,28 @@ question_classifier = LlmAgent(
     """,
     output_key="decision",
 )
+
+
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=question_classifier, 
+    app_name="Question Classifier", 
+    session_service=session_service,
+)
+
+def handle_student_question(conversation_id, question, session_id, user_id):
+    result = runner.run(
+        user_id=user_id,
+        session_id=session_id,
+        new_message=Content(role="user", parts=[Part(text=question)])
+    )
+    for event in result:
+        if event.is_final_response():
+            decision = json.loads(event.content.parts[0].text)
+
+            if decision["decision"] == "faculty":
+                add_question(conversation_id, question)
+                return "Question forwarded to faculty."
+            else:
+                return "Question answered by agent."
+        return "No response from classifier."
