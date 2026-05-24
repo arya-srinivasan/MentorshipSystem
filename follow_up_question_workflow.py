@@ -17,25 +17,9 @@ APP_NAME = "workflow"
 USER_ID = "user_1"
 
 
-runner = None
-session_id = None
-
-
-async def setup():
-    global runner, session_id
-    session_id      = f"events_{uuid.uuid4()}"
-    session_service = InMemorySessionService()
-    await session_service.create_session(
-        app_name=APP_NAME, user_id=USER_ID, session_id=session_id
-    )
-    runner = Runner(
-        app_name=APP_NAME,
-        agent=workflow_agent,
-        session_service=session_service
-    )
 
 async def main():
-    await setup()
+    session_id = f"session_{uuid.uuid4()}"
 
     response = await handle_student_question(
         conversation_id=session_id, 

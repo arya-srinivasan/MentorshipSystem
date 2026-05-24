@@ -1,11 +1,13 @@
 import os
 import json
+import asyncio
 from google.genai.types import Content, Part
 from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from database.db import add_question
+from relevant_transcript import meeting_copilot_agent
 
 load_dotenv()
 
@@ -50,7 +52,12 @@ runner = Runner(
     session_service=session_service,
 )
 
-def handle_student_question(conversation_id, question, session_id, user_id):
+async def handle_student_question(conversation_id, question, session_id, user_id):
+    await session_service.create_session(
+        app_name="Question Classifier", 
+        user_id=user_id,
+        session_id=session_id
+    )
     result = runner.run(
         user_id=user_id,
         session_id=session_id,
@@ -58,11 +65,15 @@ def handle_student_question(conversation_id, question, session_id, user_id):
     )
     for event in result:
         if event.is_final_response():
-            decision = json.loads(event.content.parts[0].text)
+            try:
+                decision = json.loads(event.content.parts[0].text)
 
-            if decision["decision"] == "faculty":
-                add_question(conversation_id, question)
-                return "Question forwarded to faculty."
-            else:
-                return "Question answered by agent."
-        return "No response from classifier."
+                if decision["decision"] == "faculty":
+                    add_question(conversation_id, question)
+                    return "Question forwarded to faculty."
+                else:
+                    # run meeting_copilot_agent here
+                    return "Question answered by agent."
+            except json.JSONDecodeError:
+                return "Classifier returned an unexpected response."
+    return "No response from classifier."
