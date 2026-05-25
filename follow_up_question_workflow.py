@@ -21,20 +21,13 @@ USER_ID = "user_1"
 async def main():
     session_id = f"session_{uuid.uuid4()}"
 
-    response = await handle_student_question(
+    workflow_response = await handle_student_question(
         conversation_id=session_id, 
         question="Can you explain what you meant by that last example?", 
         session_id=session_id, 
         user_id=USER_ID
     )
-    print("Classifier Response:", response)
-
-    faculty_response = await run_faculty_assistant(
-        conversation_id=session_id, 
-        session_id=session_id, 
-        user_id=USER_ID
-    )
-    print("Faculty Assistant Response:", faculty_response)
+    print("Classifier Response:", workflow_response)
 
 if __name__ == "__main__":
     asyncio.run(main())

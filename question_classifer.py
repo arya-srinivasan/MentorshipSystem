@@ -8,6 +8,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from database.db import add_question
 from relevant_transcript import meeting_copilot_agent
+from faculty_assistant import run_faculty_assistant
 
 load_dotenv()
 
@@ -70,7 +71,8 @@ async def handle_student_question(conversation_id, question, session_id, user_id
 
                 if decision["decision"] == "faculty":
                     add_question(conversation_id, question)
-                    return "Question forwarded to faculty."
+                    faculty_response = await run_faculty_assistant(conversation_id=session_id, session_id=session_id, user_id=user_id)
+                    return faculty_response
                 else:
                     # run meeting_copilot_agent here
                     return "Question answered by agent."
