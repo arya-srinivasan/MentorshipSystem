@@ -147,7 +147,7 @@ runner = Runner(
     session_service=session_service
 )
 
-async def run_transcript():
+async def run_transcript(user_id, session_id):
 
     for i, chunk in enumerate(transcript_stream):
 
@@ -159,9 +159,9 @@ async def run_transcript():
         )
 
         response = await runner.run_async(
-            user_id=USER_ID,
-            session_id=SESSION_ID,
+            user_id=user_id,
+            session_id=session_id,
             new_message=content
         )
-
         print(response)
+    return response
