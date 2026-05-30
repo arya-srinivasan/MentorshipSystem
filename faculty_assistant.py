@@ -56,10 +56,14 @@ async def run_faculty_assistant(conversation_id, session_id, user_id, question, 
        session_service=session_service,
     )
 
+    msg = ""
+    msg += f"Conversation context: {context}\n\n"
+    msg += f"Initial user response: {question}"
+
     result = runner.run(
         user_id=user_id,
         session_id=session_id,
-        new_message=Content(role="user", parts=[Part(text="Check pending questions")])
+        new_message=Content(role="user", parts=[Part(text=msg)])
     )
 
     for event in result:
