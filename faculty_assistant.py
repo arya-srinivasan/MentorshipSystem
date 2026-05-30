@@ -8,7 +8,8 @@ from google.genai.types import Content, Part
 
 load_dotenv()
 
-faculty_assistant = LlmAgent(
+def agent(conversation_id):
+    faculty_assistant = LlmAgent(
     name="Faculty Assistant",
     model="gemini-2.0-flash",
     description="An assistant for faculty members during live lectures to help manage student questions.",
@@ -40,18 +41,21 @@ faculty_assistant = LlmAgent(
     - If no questions are pending, respond with: "No pending questions at the moment."
     - Do not editorialize or add unnecessary commentary — keep it tight and actionable
     """,
-    tools=[get_questions],
+    tools=[get_questions(conversation_id=conversation_id)],
     output_key="response",
 )
 
-session_service = InMemorySessionService()
-runner = Runner (
-    agent=faculty_assistant, 
-    app_name="Faculty Assistant", 
-    session_service=session_service,
-)
 
-async def run_faculty_assistant(conversation_id, session_id, user_id):
+
+async def run_faculty_assistant(conversation_id, session_id, user_id, question, context):
+    a = agent(conversation_id)
+    session_service = InMemorySessionService()
+    runner = Runner (
+       agent=a, 
+       app_name="Faculty Assistant", 
+       session_service=session_service,
+    )
+
     result = runner.run(
         user_id=user_id,
         session_id=session_id,

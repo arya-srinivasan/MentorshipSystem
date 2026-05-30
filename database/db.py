@@ -30,6 +30,14 @@ def get_questions(conversation_id):
     conn.close()
     return [q[0] for q in questions]
 
+def get_conversation_context(conversation_id, question):
+    conn = sqlite3.connect("database/questions.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT context FROM questions WHERE conversation_id = ? AND question = ?", (conversation_id, question))
+    context = cursor.fetchall()
+    conn.close()
+    return context
+
 def mark_question_answered(conversation_id, question):
     conn = sqlite3.connect("database/followup_questions.db")
     cursor = conn.cursor()
