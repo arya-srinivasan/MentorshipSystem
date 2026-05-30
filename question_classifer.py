@@ -6,7 +6,7 @@ from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-from database.db import add_question
+from database.db import add_question, get_conversation_context
 from relevant_transcript import meeting_copilot_agent
 from faculty_assistant import run_faculty_assistant
 
@@ -71,7 +71,7 @@ async def handle_student_question(conversation_id, question, session_id, user_id
 
                 if decision["decision"] == "faculty":
                     add_question(conversation_id, question)
-                    faculty_response = await run_faculty_assistant(conversation_id=session_id, session_id=session_id, user_id=user_id)
+                    faculty_response = await run_faculty_assistant(conversation_id=conversation_id, session_id=session_id, user_id=user_id, question=question, context=get_conversation_context(conversation_id, question))
                     return faculty_response
                 else:
                     # run meeting_copilot_agent here
