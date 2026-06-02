@@ -13,8 +13,6 @@ load_dotenv()
 
 def agent(conversation_id):
     faculty_assistant = LlmAgent(
-def agent(conversation_id):
-    faculty_assistant = LlmAgent(
     name="Faculty Assistant",
     model="gemini-2.5-flash",
     description="An assistant for faculty members during live lectures to help manage student questions.",
