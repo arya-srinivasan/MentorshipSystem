@@ -5,9 +5,14 @@ from database.db import get_questions
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
 
 load_dotenv()
 
+def agent(conversation_id):
+    faculty_assistant = LlmAgent(
 def agent(conversation_id):
     faculty_assistant = LlmAgent(
     name="Faculty Assistant",
@@ -41,6 +46,7 @@ def agent(conversation_id):
     - If no questions are pending, respond with: "No pending questions at the moment."
     - Do not editorialize or add unnecessary commentary — keep it tight and actionable
     """,
+    tools=[get_questions(conversation_id=conversation_id)],
     tools=[get_questions(conversation_id=conversation_id)],
     output_key="response",
 )

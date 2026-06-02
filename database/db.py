@@ -2,6 +2,7 @@ import sqlite3
 
 
 conn = sqlite3.connect("database/followup_questions.db")
+conn = sqlite3.connect("database/followup_questions.db")
 cursor = conn.cursor()
 
 def create_table():
@@ -26,6 +27,7 @@ def add_question(conversation_id, question, topic_cluster="General"):
     conn.close()
 
 def get_questions(conversation_id):
+    conn = sqlite3.connect("database/followup_questions.db")
     conn = sqlite3.connect("database/followup_questions.db")
     cursor = conn.cursor()
     cursor.execute("SELECT question FROM questions WHERE conversation_id = ? AND status = 'waiting'", (conversation_id,))

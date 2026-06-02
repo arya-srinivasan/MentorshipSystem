@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { width: 300px; padding: 16px; font-family: sans-serif; }
+    button { width: 100%; padding: 10px; margin: 4px 0; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; }
+    #startBtn { background: #4F46E5; color: white; }
+    #stopBtn  { background: #ef4444; color: white; }
+    #downloadBtn { background: #059669; color: white; }
+    #output   { margin-top: 12px; font-size: 13px; line-height: 1.6; max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; min-height: 60px; color: #111; }
+    #status   { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <button id="startBtn">Start transcribing</button>
+  <button id="stopBtn">Stop</button>
+  <button id="downloadBtn">Download transcript</button>
+  <div id="status">Not running</div>
+  <div id="output">Transcript will appear here...</div>
+  <script src="popup.js"></script>
+</body>
+</html>
