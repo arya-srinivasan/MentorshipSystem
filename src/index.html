@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MentorAI</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body>
+  <div class="layout">
+
+    <div class="chat-side">
+      <header class="chat-header">
+        <h1>MentorAI — CS 101</h1>
+      </header>
+      <section class="messages" id="messages">
+        <div class="msg ai">Hi! What are you confused about?</div>
+      </section>
+      <div class="input-row">
+        <input id="input" placeholder="Ask your question..." />
+        <button id="send-btn" type="button">Send</button>
+      </div>
+    </div>
+
+    <div class="board-side">
+      <h2>Topic board</h2>
+      <div id="board">
+        <p class="board-empty">Questions appear here once classified.</p>
+      </div>
+    </div>
+
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

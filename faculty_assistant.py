@@ -5,15 +5,18 @@ from database.db import get_questions
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
 
 load_dotenv()
 
 def agent(conversation_id):
     faculty_assistant = LlmAgent(
     name="Faculty Assistant",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="An assistant for faculty members during live lectures to help manage student questions.",
-    instructions="""
+    instruction="""
     You are a real-time assistant for faculty members during live lectures. Your sole job is to monitor 
     incoming student questions and surface the most important ones to the faculty member at the right moment — 
     without being disruptive or overwhelming.
@@ -41,6 +44,7 @@ def agent(conversation_id):
     - If no questions are pending, respond with: "No pending questions at the moment."
     - Do not editorialize or add unnecessary commentary — keep it tight and actionable
     """,
+    tools=[get_questions(conversation_id=conversation_id)(conversation_id=conversation_id)],
     tools=[get_questions(conversation_id=conversation_id)],
     output_key="response",
 )
@@ -56,6 +60,20 @@ async def run_faculty_assistant(conversation_id, session_id, user_id, question, 
        session_service=session_service,
     )
 
+
+async def run_faculty_assistant(conversation_id, session_id, user_id, question, context):
+    a = agent(conversation_id)
+    session_service = InMemorySessionService()
+    runner = Runner (
+       agent=a, 
+       app_name="Faculty Assistant", 
+       session_service=session_service,
+    )
+
+    msg = ""
+    msg += f"Conversation context: {context}\n\n"
+    msg += f"Initial user response: {question}"
+
     msg = ""
     msg += f"Conversation context: {context}\n\n"
     msg += f"Initial user response: {question}"
@@ -63,6 +81,7 @@ async def run_faculty_assistant(conversation_id, session_id, user_id, question, 
     result = runner.run(
         user_id=user_id,
         session_id=session_id,
+        new_message=Content(role="user", parts=[Part(text=msg)])
         new_message=Content(role="user", parts=[Part(text=msg)])
     )
 
