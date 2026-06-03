@@ -5,9 +5,6 @@ from database.db import get_questions
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.genai.types import Content, Part
 
 load_dotenv()
 
@@ -44,7 +41,6 @@ def agent(conversation_id):
     - If no questions are pending, respond with: "No pending questions at the moment."
     - Do not editorialize or add unnecessary commentary — keep it tight and actionable
     """,
-    tools=[get_questions(conversation_id=conversation_id)(conversation_id=conversation_id)],
     tools=[get_questions(conversation_id=conversation_id)],
     output_key="response",
 )
@@ -82,7 +78,7 @@ async def run_faculty_assistant(conversation_id, session_id, user_id, question, 
         user_id=user_id,
         session_id=session_id,
         new_message=Content(role="user", parts=[Part(text=msg)])
-        new_message=Content(role="user", parts=[Part(text=msg)])
+
     )
 
     for event in result:

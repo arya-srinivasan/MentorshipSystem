@@ -91,8 +91,9 @@ async def handle_student_question(conversation_id, question, session_id, user_id
                 raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
                 decision = json.loads(raw)
 
+                add_question(conversation_id, question)
+
                 if decision["decision"] == "faculty":
-                    add_question(conversation_id, question)
                     faculty_response = await run_faculty_assistant(conversation_id=session_id, session_id=session_id, user_id=user_id, question=question, context=get_conversation_context(conversation_id, question))
                     return faculty_response
                 else:
@@ -100,7 +101,6 @@ async def handle_student_question(conversation_id, question, session_id, user_id
                     from relevant_transcript import run_transcript
                     response = await run_transcript(user_id, session_id)
                     return extract_text(response) if response else "Question answered by agent."
-                    # return "Question answered by agent."
             except json.JSONDecodeError:
                 return "Classifier returned an unexpected response."
         
