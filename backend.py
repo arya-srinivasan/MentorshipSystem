@@ -1,4 +1,15 @@
 # api.py
+
+"""
+endpoint descriptions: 
+POST /chat — student sends a message
+POST /transcript/chunk — Prithika sends transcript chunks
+POST /transcript/answer — Pariya writes answers back
+GET  /answered/{session_id} — frontend polls for answered questions
+GET  /questions/{session_id} — get waiting questions
+GET  /health — check if server is running
+
+"""
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,10 +29,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from intake_classifier_agent import run_intake_classifier_session
 from relevant_transcript import run_transcript
 from question_classifer import handle_student_question
-from database.db import add_question, get_questions, create_table, get_answered_questions
+from database.db import add_question, get_questions, create_table, get_answered_questions, mark_question_answered
 
 from contextlib import asynccontextmanager
 
+transcript_chunks = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -112,6 +124,26 @@ def extract_text(r) -> str:
         try: return r.content.parts[0].text
         except: pass
     return str(r) if r else "No response."
+
+class TranscriptChunk(BaseModel):
+    text: str
+    timestamp: Optional[str] = None
+
+@app.post("/transcript/chunk")
+async def recieve_chunk(chunk: TranscriptChunk):
+    #relevant transcript agent plug in here
+    transcript_chunks.append({"text": chunk.text, "timestamp": chunk.timestamp})
+    return {"status": "received"}
+
+class AnswerUpdate(BaseModel):
+    conversation_id: str
+    question: str
+    answer: str
+
+@app.post("/transcript/answer")
+def receive_answer(update: AnswerUpdate):
+    mark_question_answered(update.conversation_id, update.question, update.answer)
+    return {"status": "updated"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
