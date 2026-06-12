@@ -49,6 +49,7 @@ class ChatResponse(BaseModel):
     session_id: str
     path: str
     topic_cluster: Optional[str] = None
+    summarized_question: Optional[str] = None
 
 @app.on_event("startup")
 async def startup():
@@ -75,6 +76,7 @@ async def chat(req: ChatRequest):
             session_id=session_id,
             path="ai",
             topic_cluster=result["topic_cluster"],
+            summarized_question=result["summarized_question"],
         )
 
     else:
@@ -100,9 +102,9 @@ def health():
 def root():
     return FileResponse("src/index.html")
 
-@app.get("/answered_questions/{session_id}")
+@app.get("/answered/{session_id}")
 def answered(session_id: str):
-    return {"questions:": get_answered_questions(session_id)}
+    return {"questions": get_answered_questions(session_id)}
 
 def extract_text(r) -> str:
     if isinstance(r, str): return r

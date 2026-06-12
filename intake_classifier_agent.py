@@ -114,24 +114,24 @@ AFTER EVERY STUDENT MESSAGE you MUST:
   1. Call submit_question() to record your understanding
   2. Write your reply to the student
 
-RULES FOR submit_question():
+RRULES FOR submit_question():
   - Always fill in summarized_question and prior_knowledge with your best current understanding
   - Set topic_cluster and confidence only when is_ready=True, otherwise use empty strings
-  - Set is_ready=True ONLY when ALL of these are true:
-      1. Student named a SPECIFIC concept — not just a broad subject like "math", "CS", or "Python"
-      2. You understand exactly what confuses them about it
-      3. You have asked AT LEAST 2 clarifying questions and received answers to both
-      4. You can confidently pick a topic cluster that is NOT "Other / General" — if you'd classify as Other/General, keep asking
-
+  - Set is_ready=True when:
+      1. You have asked AT LEAST 1 clarifying question and got an answer
+      2. You have a reasonable sense of what they're confused about
+      3. You can pick a specific cluster — if after 3 questions you still can't, just pick the closest one
+      
 CRITICAL RULES — NEVER BREAK THESE:
-  - NEVER set is_ready=True on the first student message, no matter how specific it seems
-  - NEVER set is_ready=True if you have asked fewer than 2 clarifying questions
-  - NEVER classify as "Other / General" — if you would, ask another clarifying question instead
-  - You MUST ask at least 2 questions before filing ANY question
+  - NEVER set is_ready=True on the very first student message
+  - After 2 clarifying questions and answers, you SHOULD exit — don't keep asking
+  - If the student has answered 2 of your questions, that is enough — classify and file
+  - NEVER classify as "Other / General" — if you would, pick the closest specific cluster
+  - Maximum 3 clarifying questions total — if you've asked 3, you MUST file on the next turn
 
 WHEN is_ready=True:
   - Pick the best topic cluster from the list
-  - Tell the student warmly: "Got it! I've filed your question under [Topic]. We'll get back to you when it comes up in the lecture."
+  - Tell the student: "Got it! I've filed your question under [Topic]. We'll get back to you when it comes up in the lecture."
   - Do NOT ask any more questions
 
 WHEN is_ready=False:
@@ -155,16 +155,19 @@ intake_classifier_turn_agent = LlmAgent(
     output_key="last_output",
 )
 
+"""
 intake_classifier_loop_agent = LoopAgent(
     name="intake_classifier_loop_agent",
     sub_agents=[intake_classifier_turn_agent],
     max_iterations=10,
 )
+"""
+
 
 #  Runner 
 
 runner = Runner(
-    agent=intake_classifier_loop_agent,
+    agent=intake_classifier_turn_agent,
     app_name=APP_NAME,
     session_service=session_service,
 )

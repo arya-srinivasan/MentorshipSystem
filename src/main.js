@@ -12,6 +12,7 @@ inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
 
 // send message 
 
+
 async function send() {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -28,7 +29,12 @@ async function send() {
     });
     const data = await res.json();
     addMsg(data.response, "ai", data.path);
-    if (data.topic_cluster) addToBoard(text, data.topic_cluster, data.path);
+    const displayQuestion = data.summarized_question || text;
+    // if (data.topic_cluster) addToBoard(displayQuestion, data.topic_cluster, data.path);
+    if (data.summarized_question && data.topic_cluster) {
+        addToBoard(data.summarized_question, data.topic_cluster, data.path);
+    }
+
     if (data.session_id) currentSessionId = data.session_id;
   } catch (err) {
     addMsg("Could not reach backend.", "ai");
