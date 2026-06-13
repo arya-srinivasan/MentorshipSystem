@@ -27,7 +27,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from intake_agent import run_intake_session
 # from classifier_agent import classify_student_question
 from intake_classifier_agent import run_intake_classifier_session
-from relevant_transcript import analyze_transcript_chunk
+from relevant_transcript import run_transcript
 from question_classifer import handle_student_question
 from database.db import add_question, get_questions, create_table, get_answered_questions, mark_question_answered
 
@@ -128,34 +128,12 @@ def extract_text(r) -> str:
 class TranscriptChunk(BaseModel):
     text: str
     timestamp: Optional[str] = None
-    speaker: Optional[str] = None
-    session_id: Optional[str] = "live_session"
 
 @app.post("/transcript/chunk")
 async def recieve_chunk(chunk: TranscriptChunk):
-    """
-    Receives a transcript chunk (from the Zoom bot / live_transcription_tool.py,
-    or from the static-transcript test script), stores it in Pinecone as
-    meeting memory, and runs the meeting_copilot_agent on it.
-    """
-    transcript_chunks.append({
-        "text": chunk.text,
-        "timestamp": chunk.timestamp,
-        "speaker": chunk.speaker,
-    })
-
-    insight = await analyze_transcript_chunk(
-        chunk.text,
-        session_id=chunk.session_id,
-        metadata={"timestamp": chunk.timestamp, "speaker": chunk.speaker},
-    )
-
-    return {"status": "received", "insight": insight}
-
-@app.get("/transcript/chunks")
-def list_chunks():
-    """Debug endpoint - see everything received so far."""
-    return {"chunks": transcript_chunks}
+    #relevant transcript agent plug in here
+    transcript_chunks.append({"text": chunk.text, "timestamp": chunk.timestamp})
+    return {"status": "received"}
 
 class AnswerUpdate(BaseModel):
     conversation_id: str
