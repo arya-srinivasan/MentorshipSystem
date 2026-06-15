@@ -36,7 +36,6 @@ from database.db import add_question, get_questions, create_table, get_answered_
 from contextlib import asynccontextmanager
 
 transcript_chunks = []
-sse_queues: dict = {}
 meeting_active = False
 
 @asynccontextmanager

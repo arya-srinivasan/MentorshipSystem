@@ -231,6 +231,7 @@ async def run_transcript(user_id: str, session_id: str, question: str = None) ->
 
     content = Content(role="user", parts=[Part(text=prompt)])
     final_response = ""
+    
     async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
         if event.is_final_response():
             final_response = _extract_text(event)

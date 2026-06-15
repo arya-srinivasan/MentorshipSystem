@@ -63,7 +63,6 @@ async def run_faculty_assistant(conversation_id, session_id, user_id, question):
         session_service=session_service,
     )
 
-    # ── create session first ──────────────────────────────────────────────────
     try:
         await session_service.create_session(
             app_name="Faculty_Assistant",

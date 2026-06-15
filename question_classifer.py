@@ -86,7 +86,6 @@ async def handle_student_question(conversation_id, question, session_id, user_id
                 raw = event.content.parts[0].text
                 raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
                 decision = json.loads(raw)
-
                 if decision["decision"] == "faculty":
                     faculty_response = await run_faculty_assistant(
                         conversation_id=session_id, 
