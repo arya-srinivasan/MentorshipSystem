@@ -5,7 +5,6 @@ import asyncio
 from google.genai.types import Content, Part
 import json
 import asyncio
-from google.genai.types import Content, Part
 from google.adk.agents import LlmAgent
 from dotenv import load_dotenv
 from google.adk.runners import Runner
@@ -13,11 +12,7 @@ from google.adk.sessions import InMemorySessionService
 from database.db import add_question, get_conversation_context
 from relevant_transcript import meeting_copilot_agent
 from faculty_assistant import run_faculty_assistant
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from database.db import add_question, get_conversation_context
-from relevant_transcript import meeting_copilot_agent
-from faculty_assistant import run_faculty_assistant
+from relevant_transcript import retrieval_tool
 
 load_dotenv()
 
@@ -37,7 +32,7 @@ question_classifier = LlmAgent(
     You are a classifier for a student Q&A system used during live lectures.
 
     Your job is to decide whether a student's question can be answered by the AI agent, 
-    or whether it requires the faculty member's attention.
+    or whether it requires the faculty member's attention. You are given the information from the transcript.
 
     RULES - The agent CAN answer questions that are:
     - Factual and grounded in general course knowledge or provided materials
@@ -60,6 +55,7 @@ question_classifier = LlmAgent(
     }
     """,
     output_key="decision",
+    tools=[retrieval_tool]
 )
 
 
@@ -91,11 +87,14 @@ async def handle_student_question(conversation_id, question, session_id, user_id
                 raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
                 decision = json.loads(raw)
 
-                add_question(conversation_id, question)
-
                 if decision["decision"] == "faculty":
-                    faculty_response = await run_faculty_assistant(conversation_id=session_id, session_id=session_id, user_id=user_id, question=question, context=get_conversation_context(conversation_id, question))
-                    return faculty_response
+                    faculty_response = await run_faculty_assistant(
+                        conversation_id=session_id, 
+                        session_id=session_id, 
+                        user_id=user_id, 
+                        question=question,
+                    )
+                    return "Question was given to the faculty"
                 else:
                     # run meeting_copilot_agent here
                     from relevant_transcript import run_transcript

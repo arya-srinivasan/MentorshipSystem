@@ -26,6 +26,7 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
 from google.adk.tools import FunctionTool
+from google.genai.types import Content, Part
 from google.genai import types
 
 load_dotenv()
@@ -139,7 +140,7 @@ retrieval_tool = FunctionTool(retrieve_relevant_transcript)
 
 meeting_copilot_agent = Agent(
     name="meeting_copilot_agent",
-    model=LiteLlm(model="groq/llama-3.3-70b-versatile"),
+    model="gemini-2.5-flash",
     tools=[retrieval_tool],
     instruction="""
 You are a real-time AI meeting copilot.
@@ -217,14 +218,20 @@ _DEMO_TRANSCRIPT_STREAM = [
     "We should analyze EC2 spot instances.",
 ]
 
-
-async def run_transcript(user_id: str, session_id: str) -> str:
-    final_response = ""
-    for i, chunk in enumerate(_DEMO_TRANSCRIPT_STREAM):
-        final_response = await analyze_transcript_chunk(
-            chunk,
-            user_id=user_id,
-            session_id=session_id,
-            chunk_id=f"demo-chunk-{i}",
+async def run_transcript(user_id: str, session_id: str, question: str = None) -> str:
+    """Query Pinecone with the student's question and return an answer."""
+    try:
+        await session_service.create_session(
+            app_name=APP_NAME, user_id=user_id, session_id=session_id
         )
+    except Exception:
+        pass
+
+    prompt = question if question else "Summarize the key points discussed so far."
+
+    content = Content(role="user", parts=[Part(text=prompt)])
+    final_response = ""
+    async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
+        if event.is_final_response():
+            final_response = _extract_text(event)
     return final_response

@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os, sys, uuid
+import asyncio
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -27,13 +29,15 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # from intake_agent import run_intake_session
 # from classifier_agent import classify_student_question
 from intake_classifier_agent import run_intake_classifier_session
-from relevant_transcript import analyze_transcript_chunk
+from relevant_transcript import analyze_transcript_chunk, run_transcript
 from question_classifer import handle_student_question
 from database.db import add_question, get_questions, create_table, get_answered_questions, mark_question_answered
 
 from contextlib import asynccontextmanager
 
 transcript_chunks = []
+sse_queues: dict = {}
+meeting_active = False
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -69,42 +73,44 @@ async def startup():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    is_first = req.user_id not in sessions
+    global meeting_active
+    print(f"Meeting Active: {meeting_active}")
+
+    #is_first = req.user_id not in sessions
     session_id = sessions.setdefault(req.user_id, f"session_{uuid.uuid4()}")
 
-    if is_first or session_phase.get(session_id) == "intake":
-        reply, result = await run_intake_classifier_session(req.user_id, session_id, req.message)
-
-        if not result:
-            session_phase[session_id] = "intake"
-            return ChatResponse(response=reply, session_id=session_id, path="intake", topic_cluster=None)
-
-        session_phase[session_id] = "classified"
-        classifier_results[session_id] = result
-        add_question(session_id, result["summarized_question"], result["topic_cluster"])
-
-        return ChatResponse(
-            response=reply,
-            session_id=session_id,
-            path="ai",
-            topic_cluster=result["topic_cluster"],
-            summarized_question=result["summarized_question"],
-        )
-
-    else:
-        prev = classifier_results.get(session_id, {})
+    if meeting_active:
+        print("Start handle")
         response = await handle_student_question(session_id, req.message, session_id, req.user_id)
         text = extract_text(response)
         return ChatResponse(
             response=text,
             session_id=session_id,
             path="faculty" if "Student Question:" in text else "ai",
-            topic_cluster=prev.get("topic_cluster")
+            topic_cluster=classifier_results.get(session_id, {}).get("topic_cluster"),  # ← fixed
         )
+
+    reply, result = await run_intake_classifier_session(req.user_id, session_id, req.message)
+    if not result:
+        session_phase[session_id] = "intake"
+        return ChatResponse(response=reply, session_id=session_id, path="intake")
+
+    classifier_results[session_id] = result
+    add_question(session_id, result["summarized_question"], result["topic_cluster"])
+    
+    session_phase[session_id] = "classified"
+
+    return ChatResponse(
+        response=reply,
+        session_id=session_id,
+        path="classified",
+        topic_cluster=result["topic_cluster"],
+        summarized_question=result["summarized_question"],
+    )
     
 @app.get("/questions/{conversation_id}")
 def questions(conversation_id: str):
-    return {"questions": get_questions(conversation_id)}
+    return {"questions": get_questions(conversation_id=conversation_id)}
 
 @app.get("/health")
 def health():
@@ -132,23 +138,28 @@ class TranscriptChunk(BaseModel):
     session_id: Optional[str] = "live_session"
 
 @app.post("/transcript/chunk")
-async def recieve_chunk(chunk: TranscriptChunk):
-    """
-    Receives a transcript chunk (from the Zoom bot / live_transcription_tool.py,
-    or from the static-transcript test script), stores it in Pinecone as
-    meeting memory, and runs the meeting_copilot_agent on it.
-    """
+async def receive_chunk(chunk: TranscriptChunk):
+    global meeting_active
+
     transcript_chunks.append({
         "text": chunk.text,
         "timestamp": chunk.timestamp,
         "speaker": chunk.speaker,
     })
 
-    insight = await analyze_transcript_chunk(
-        chunk.text,
-        session_id=chunk.session_id,
-        metadata={"timestamp": chunk.timestamp, "speaker": chunk.speaker},
-    )
+    if not meeting_active:
+        meeting_active = True
+        task = asyncio.create_task(answer_queued(chunk.session_id))
+
+    try:
+        insight = await analyze_transcript_chunk(
+            chunk.text,
+            session_id=chunk.session_id,
+            metadata={"timestamp": chunk.timestamp, "speaker": chunk.speaker},
+        )
+    except Exception as e:
+        print(f"[transcript/chunk ERROR] {e}")
+        raise
 
     return {"status": "received", "insight": insight}
 
@@ -166,6 +177,25 @@ class AnswerUpdate(BaseModel):
 def receive_answer(update: AnswerUpdate):
     mark_question_answered(update.conversation_id, update.question, update.answer)
     return {"status": "updated"}
+
+async def answer_queued(session_id: str):
+    while meeting_active:
+        try:
+            queued = get_questions()
+            for q in queued:
+                try:
+                    response = await run_transcript("system", session_id, question=q["question"])
+                    text = extract_text(response)
+                    mark_question_answered(q["conversation_id"], q["question"], text)
+                
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+        await asyncio.sleep(10)
+    print("[queued] loop stopped")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
